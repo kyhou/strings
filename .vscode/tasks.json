@@ -1,0 +1,209 @@
+// {
+//     // See https://go.microsoft.com/fwlink/?LinkId=733558
+//     // for the documentation about the tasks.json format
+//     "version": "2.0.0",
+//     "tasks": [
+//         {
+//             "label": "build debug",
+//             "type": "process",
+//             "command": "make",
+//             "windows": {
+//                 "command": "mingw32-make.exe",
+//                 "args": [
+//                     "SHELL=cmd"
+//                 ],
+//             },
+//             "group": {
+//                 "kind": "build",
+//                 "isDefault": true
+//             },
+//             "problemMatcher": [
+//                 "$gcc"
+//             ],
+//             "dependsOn":["UpdateMake"]
+//         },
+//         {
+//             "label": "build release",
+//             "type": "process",
+//             "command": "make",
+//             "windows": {
+//                 "command": "mingw32-make.exe",
+//                 "args": [
+//                     "SHELL=cmd",
+//                     "config=release_x64"
+//                 ],
+//             },
+//             "linux": {
+//                 "args": [
+//                     "config=release_x64"
+//                 ],
+//             },
+//             "osx": {
+//                 "args": [
+//                     "config=release_ARM64"
+//                 ],
+//             },
+//             "group": "build",
+//             "problemMatcher": [
+//                 "$gcc"
+//             ],
+//             "dependsOn":["UpdateMake"]
+//         },
+//         {
+//             "label": "Clean",
+//             "type": "process",
+//             "command": "make",
+//             "windows": {
+//                 "command": "mingw32-make.exe",
+//                 "args": [
+//                     "SHELL=cmd",
+//                     "clean"
+//                 ],
+//             },
+//             "linux": {
+//                 "args": [
+//                     "clean"
+//                 ],
+//             },
+//             "osx": {
+//                 "args": [
+//                     "clean"
+//                 ],
+//             },
+//             "group": "build",
+//             "problemMatcher": [
+//                 "$gcc"
+//             ],
+//             "dependsOn":["UpdateMake"]
+//         },
+//         {
+//             "label": "UpdateMake",
+//             "type": "process",
+//             "command": "./premake5",
+//             "options": {
+//                 "cwd": "${workspaceFolder}/build/"
+//             },
+//             "args": [
+//                 "gmake2"
+//             ],
+//             "windows": {
+//                 "command": "./premake5.exe"
+//             },
+//             "linux": {
+//                 "command": "./premake5"
+//             },
+//             "osx": {
+//                 "command": "premake5.osx"
+//             },
+//             "group": "build"
+//         }
+//     ]
+// }
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build debug",
+            "type": "process",
+            "command": "make",
+            "args": [
+                "PLATFORM=PLATFORM_WEB",
+                "BUILD_MODE=DEBUG",
+                "PROJECT_NAME=${fileBasenameNoExtension}",
+                "OBJS=${fileBasenameNoExtension}.c"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/src"
+            },
+            "windows": {
+                "command": "mingw32-make.exe",
+                "args": [
+                    "RAYLIB_PATH=C:/raylib/raylib",
+                    "PROJECT_NAME=${fileBasenameNoExtension}",
+                    "OBJS=${fileBasenameNoExtension}.c",
+                    "BUILD_MODE=DEBUG",
+                    "PLATFORM=PLATFORM_WEB",
+                    "-B"
+                ],
+            },
+            "osx": {
+                "args": [
+                    "RAYLIB_PATH=<path_to_raylib>/raylib",
+                    "PROJECT_NAME=${fileBasenameNoExtension}",
+                    "OBJS=${fileBasenameNoExtension}.c",
+                    "BUILD_MODE=DEBUG",
+                    "PLATFORM=PLATFORM_WEB",
+                    "-B"
+                ],
+            },
+            "linux": {
+                "args": [
+                    "EMSDK_PATH=/home/joel/Sync/Projetos/raylib/emsdk",
+                    "RAYLIB_PATH=/home/joel/Sync/Projetos/raylib/raylib",
+                    "PROJECT_NAME=${fileBasenameNoExtension}",
+                    "OBJS=${fileBasenameNoExtension}.c",
+                    "BUILD_MODE=DEBUG",
+                    "PLATFORM=PLATFORM_WEB",
+                    "-B"
+                ],
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "label": "build release",
+            "type": "process",
+            "command": "make",
+            "args": [
+                "PLATFORM=PLATFORM_WEB",
+                "PLATFORM_OS=LINUX",
+                "PROJECT_NAME=${fileBasenameNoExtension}",
+                "OBJS=${fileBasenameNoExtension}.c"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/src"
+            },
+            "windows": {
+                "command": "mingw32-make.exe",
+                "args": [
+                    "RAYLIB_PATH=C:/raylib/raylib",
+                    "PROJECT_NAME=${fileBasenameNoExtension}",
+                    "OBJS=${fileBasenameNoExtension}.c",
+                    "PLATFORM=PLATFORM_WEB",
+                    "-B"
+                ],
+            },
+            "osx": {
+                "args": [
+                    "RAYLIB_PATH=<path_to_raylib>/raylib",
+                    "PROJECT_NAME=${fileBasenameNoExtension}",
+                    "OBJS=${fileBasenameNoExtension}.c",
+                    "PLATFORM=PLATFORM_WEB",
+                    "-B"
+                ],
+            },
+            "linux": {
+                "args": [
+                    "EMSDK_PATH=/home/joel/Sync/Projetos/raylib/emsdk",
+                    "RAYLIB_PATH=/home/joel/Sync/Projetos/raylib/raylib",
+                    "PROJECT_NAME=${fileBasenameNoExtension}",
+                    "OBJS=${fileBasenameNoExtension}.c",
+                    "PLATFORM=PLATFORM_WEB",
+                    "-B",
+                    "PLATFORM_OS=LINUX"
+                ],
+            },
+            "group": "build",
+            "problemMatcher": [
+                "$gcc"
+            ]
+        }
+    ]
+}
