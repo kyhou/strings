@@ -137,7 +137,6 @@ void UpdatePlayer(Player *player, EnvItem *envItems, int envItemsLength,
 void UpdateCameraCenterInsideMap(Camera2D *camera, Player *player,
                                  EnvItem *envItems, int envItemsLength,
                                  float delta, int width, int height);
-bool ColorIsEqual(Color col1, Color col2);
 void NewLinePoint(Vector2 playerCenter, Player *player, EnvItem *envItems, int envItemsLength);
 static void Reset();
 
@@ -729,14 +728,4 @@ void UpdateCameraCenterInsideMap(Camera2D *camera, Player *player,
     camera->offset.x = (float)width / 2.0f - min.x;
   if (min.y > 0)
     camera->offset.y = (float)height / 2.0f - min.y;
-}
-
-bool ColorIsEqual(Color col1, Color col2)
-{
-  bool result = false;
-
-  if ((col1.r == col2.r) && (col1.g == col2.g) && (col1.b == col2.b) && (col1.a == col2.a))
-    result = true;
-
-  return result;
 }
