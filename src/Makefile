@@ -32,7 +32,7 @@ PLATFORM              ?= PLATFORM_WEB
 PROJECT_NAME          ?= raylib_game
 PROJECT_VERSION       ?= 1.0
 PROJECT_BUILD_PATH    ?= .
-PROJECT_SOURCE_FILES  ?= raylib_game.c draw_helpers.c shapes_helpers.c
+PROJECT_SOURCE_FILES  ?= raylib_game.c
 
 # raylib library variables
 RAYLIB_SRC_PATH       ?= /home/joel/Sync/Projetos/raylib/raylib/src
