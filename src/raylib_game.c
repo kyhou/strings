@@ -120,13 +120,17 @@ static Level level1 = {
 
 static Level level2 = {
     .id = 2,
-    .qtdEnvItems = 5};
+    .qtdEnvItems = 6,
+    .qtdGoals = 1,
+    .qtdSpawners = 1};
 static int envItemsLength;
 static int spawnersLength;
 static int goalsLength;
 
 GameScreen currentScreen = TITLE;
 int framesCounter = 0;
+int currentLevelId = 1;
+Level currentLevel;
 
 //----------------------------------------------------------------------------------
 // Module Functions Declaration
@@ -139,6 +143,7 @@ void UpdateCameraCenterInsideMap(Camera2D *camera, Player *player,
                                  float delta, int width, int height);
 void NewLinePoint(Vector2 playerCenter, Player *player, EnvItem *envItems, int envItemsLength);
 static void Reset();
+bool ColorIsEqual(Color col1, Color col2);
 
 //------------------------------------------------------------------------------------
 // Program main entry point
@@ -180,10 +185,17 @@ int main(void)
 
   level2.envItems = (EnvItem *)malloc(level2.qtdEnvItems * sizeof(EnvItem));
   level2.envItems[0] = (EnvItem){{0, 0, 1000, 400}, 0, LIGHTGRAY};
-  level2.envItems[1] = (EnvItem){{0, 400, 1000, 200}, 1, GREEN};
-  level2.envItems[2] = (EnvItem){{300, 200, 400, 10}, 1, GREEN};
-  level2.envItems[3] = (EnvItem){{250, 300, 100, 10}, 1, GREEN};
-  level2.envItems[4] = (EnvItem){{650, 300, 100, 10}, 1, GREEN};
+  level2.envItems[1] = (EnvItem){{0, 400, 1000, 200}, 1, GRAY};
+  level2.envItems[2] = (EnvItem){{300, 200, 400, 10}, 1, GRAY};
+  level2.envItems[3] = (EnvItem){{250, 300, 100, 10}, 1, GRAY};
+  level2.envItems[4] = (EnvItem){{650, 300, 100, 10}, 1, GRAY};
+  level2.envItems[5] = (EnvItem){{450, 200, 10, 200}, 1, GRAY};
+
+  level2.lineSpawners = (LineSpawner *)malloc(level2.qtdSpawners * sizeof(LineSpawner));
+  level2.lineSpawners[0] = (LineSpawner){.color = RED, .activated = false, .rect = {.x = 200, .y = 375, .width = 10, .height = 25}};
+
+  level2.goals = (Goal *)malloc(level2.qtdGoals * sizeof(Goal));
+  level2.goals[0] = (Goal){.color = RED, .isSet = false, .rect = {.x = 600, .y = 300, .width = 50, .height = 100}};
 
   Points redLine;
   redLine.last = -1;
@@ -203,9 +215,11 @@ int main(void)
   blueLine.points = (Vector2 *)malloc(blueLine.capacity * sizeof(Vector2));
   player.blueLine = blueLine;
 
-  envItemsLength = level1.qtdEnvItems;
-  spawnersLength = level1.qtdSpawners;
-  goalsLength = level1.qtdGoals;
+  currentLevel = level1;
+
+  envItemsLength = currentLevel.qtdEnvItems;
+  spawnersLength = currentLevel.qtdSpawners;
+  goalsLength = currentLevel.qtdGoals;
 
   camera.target = Vector2Zero();
   camera.rotation = 0.0f;
@@ -280,13 +294,13 @@ static void UpdateDrawFrame(void)
   {
     // TODO: Update GAMEPLAY screen variables here!
 
-    UpdatePlayer(&player, level1.envItems, envItemsLength, deltaTime);
+    UpdatePlayer(&player, currentLevel.envItems, envItemsLength, deltaTime);
 
     if (IsKeyPressed(KEY_R))
     {
       Reset();
     }
-    UpdateCameraCenterInsideMap(&camera, &player, level1.envItems, envItemsLength,
+    UpdateCameraCenterInsideMap(&camera, &player, currentLevel.envItems, envItemsLength,
                                 deltaTime, screenWidth, screenHeight);
 
     //----------------------------------------------------------------------------------
@@ -342,31 +356,31 @@ static void UpdateDrawFrame(void)
 
     for (int i = 0; i < envItemsLength; i++)
     {
-      DrawRectangleRec(level1.envItems[i].rect, level1.envItems[i].color);
+      DrawRectangleRec(currentLevel.envItems[i].rect, currentLevel.envItems[i].color);
     }
 
     for (int i = 0; i < spawnersLength; i++)
     {
-      if (CheckCollisionRecs(player.rect, level1.lineSpawners[i].rect))
+      if (CheckCollisionRecs(player.rect, currentLevel.lineSpawners[i].rect))
       {
-        DrawText("E", (int)(level1.lineSpawners[i].rect.x + 15), (int)(level1.lineSpawners[i].rect.y - 35), 30, BLACK);
+        DrawText("E", (int)(currentLevel.lineSpawners[i].rect.x + 15), (int)(currentLevel.lineSpawners[i].rect.y - 35), 30, BLACK);
       }
-      DrawRectangleRec(level1.lineSpawners[i].rect, level1.lineSpawners[i].color);
+      DrawRectangleRec(currentLevel.lineSpawners[i].rect, currentLevel.lineSpawners[i].color);
     }
 
     for (int i = 0; i < goalsLength; i++)
     {
-      if (level1.goals[i].isSet)
+      if (currentLevel.goals[i].isSet)
       {
-        DrawRectangleRec(level1.goals[i].rect, level1.goals[i].color);
+        DrawRectangleRec(currentLevel.goals[i].rect, currentLevel.goals[i].color);
       }
       else
       {
-        if (CheckCollisionRecs(player.rect, level1.goals[i].rect))
+        if (CheckCollisionRecs(player.rect, currentLevel.goals[i].rect))
         {
-          DrawText("C", (int)(level1.goals[i].rect.x + 15), (int)(level1.goals[i].rect.y - 35), 30, BLACK);
+          DrawText("C", (int)(currentLevel.goals[i].rect.x + 15), (int)(currentLevel.goals[i].rect.y - 35), 30, BLACK);
         }
-        DrawRectangleLinesEx(level1.goals[i].rect, 1.0f, level1.goals[i].color);
+        DrawRectangleLinesEx(currentLevel.goals[i].rect, 1.0f, currentLevel.goals[i].color);
       }
     }
 
@@ -404,11 +418,11 @@ static void UpdateDrawFrame(void)
     for (int i = 0; i <= player.redLine.last; i++)
     {
       bool allGoalsReached = true;
-      for (int j = 0; j < level1.qtdGoals; j++)
+      for (int j = 0; j < currentLevel.qtdGoals; j++)
       {
-        if (ColorIsEqual(level1.goals[j].color, RED))
+        if (ColorIsEqual(currentLevel.goals[j].color, RED))
         {
-          allGoalsReached &= CheckCollisionPointRec(player.redLine.points[i], level1.goals[j].rect);
+          allGoalsReached &= CheckCollisionPointRec(player.redLine.points[i], currentLevel.goals[j].rect);
         }
       }
 
@@ -430,12 +444,12 @@ static void UpdateDrawFrame(void)
     for (int i = 0; i <= player.greenLine.last; i++)
     {
       bool allGoalsReached = true;
-      for (int j = 0; j < level1.qtdGoals; j++)
+      for (int j = 0; j < currentLevel.qtdGoals; j++)
       {
 
-        if (ColorIsEqual(level1.goals[j].color, RED))
+        if (ColorIsEqual(currentLevel.goals[j].color, RED))
         {
-          allGoalsReached &= CheckCollisionPointRec(player.greenLine.points[i], level1.goals[j].rect);
+          allGoalsReached &= CheckCollisionPointRec(player.greenLine.points[i], currentLevel.goals[j].rect);
         }
       }
 
@@ -457,12 +471,12 @@ static void UpdateDrawFrame(void)
     for (int i = 0; i <= player.blueLine.last; i++)
     {
       bool allGoalsReached = true;
-      for (int j = 0; j < level1.qtdGoals; j++)
+      for (int j = 0; j < currentLevel.qtdGoals; j++)
       {
 
-        if (ColorIsEqual(level1.goals[j].color, RED))
+        if (ColorIsEqual(currentLevel.goals[j].color, RED))
         {
-          allGoalsReached &= CheckCollisionPointRec(player.blueLine.points[i], level1.goals[j].rect);
+          allGoalsReached &= CheckCollisionPointRec(player.blueLine.points[i], currentLevel.goals[j].rect);
         }
       }
 
@@ -482,13 +496,21 @@ static void UpdateDrawFrame(void)
     }
 
     bool allGoalsReached = true;
-    for (int i = 0; i < level1.qtdGoals; i++)
+    for (int i = 0; i < currentLevel.qtdGoals; i++)
     {
-      allGoalsReached &= level1.goals[i].isSet;
+      allGoalsReached &= currentLevel.goals[i].isSet;
     }
 
     if (allGoalsReached) {
-      currentScreen = ENDING;
+      currentLevelId++;
+
+      if (currentLevelId == 2) {
+        currentLevel = level2;
+        Reset();
+      }
+      else {
+        currentScreen = ENDING;
+      }
     }
     
   }
@@ -530,14 +552,14 @@ void Reset()
   camera.zoom = 1.0f;
   player.position = (Vector2){400, 280};
 
-  for (int i = 0; i < level1.qtdGoals; i++)
+  for (int i = 0; i < currentLevel.qtdGoals; i++)
   {
-    level1.goals[i].isSet = false;
+    currentLevel.goals[i].isSet = false;
   }
 
-  for (int i = 0; i < level1.qtdSpawners; i++)
+  for (int i = 0; i < currentLevel.qtdSpawners; i++)
   {
-    level1.lineSpawners[i].activated = false;
+    currentLevel.lineSpawners[i].activated = false;
   }
 
   player.redLine.last = -1;
@@ -561,37 +583,37 @@ void UpdatePlayer(Player *player, EnvItem *envItems, int envItemsLength,
   if (IsKeyPressed(KEY_Q))
   {
     player->selectedColor = 0;
-    for (int i = 0; i < level1.qtdSpawners; i++)
+    for (int i = 0; i < currentLevel.qtdSpawners; i++)
     {
-      level1.lineSpawners[i].activated = false;
+      currentLevel.lineSpawners[i].activated = false;
     }
   }
 
   if (IsKeyPressed(KEY_E))
   {
-    for (int i = 0; i < level1.qtdSpawners; i++)
+    for (int i = 0; i < currentLevel.qtdSpawners; i++)
     {
-      if (CheckCollisionRecs(player->rect, level1.lineSpawners[i].rect))
+      if (CheckCollisionRecs(player->rect, currentLevel.lineSpawners[i].rect))
       {
-        if (ColorIsEqual(level1.lineSpawners[i].color, RED))
+        if (ColorIsEqual(currentLevel.lineSpawners[i].color, RED))
         {
           player->selectedColor = 1;
         }
 
-        if (ColorIsEqual(level1.lineSpawners[i].color, GREEN))
+        if (ColorIsEqual(currentLevel.lineSpawners[i].color, GREEN))
         {
           player->selectedColor = 2;
         }
 
-        if (ColorIsEqual(level1.lineSpawners[i].color, BLUE))
+        if (ColorIsEqual(currentLevel.lineSpawners[i].color, BLUE))
         {
           player->selectedColor = 3;
         }
 
-        if (player->selectedColor != 0 && !level1.lineSpawners[i].activated)
+        if (player->selectedColor != 0 && !currentLevel.lineSpawners[i].activated)
         {
-          level1.lineSpawners[i].activated = true;
-          NewLinePoint((Vector2){level1.lineSpawners[i].rect.x + level1.lineSpawners[i].rect.width / 2, level1.lineSpawners[i].rect.y + level1.lineSpawners[i].rect.height / 2}, player, envItems, envItemsLength);
+          currentLevel.lineSpawners[i].activated = true;
+          NewLinePoint((Vector2){currentLevel.lineSpawners[i].rect.x + currentLevel.lineSpawners[i].rect.width / 2, currentLevel.lineSpawners[i].rect.y + currentLevel.lineSpawners[i].rect.height / 2}, player, envItems, envItemsLength);
           break;
         }
       }
@@ -601,17 +623,17 @@ void UpdatePlayer(Player *player, EnvItem *envItems, int envItemsLength,
   if (IsKeyPressed(KEY_C))
   {
     bool setGoal = false;
-    for (int i = 0; i < level1.qtdGoals; i++)
+    for (int i = 0; i < currentLevel.qtdGoals; i++)
     {
       LineRecColisions colisions;
-      if ((player->selectedColor == 1 && ColorIsEqual(level1.goals[i].color, RED) && !CheckLineEnvColision((Line){player->redLine.points[player->redLine.last], playerCenter}, envItems, envItemsLength, &colisions)) ||
-          (player->selectedColor == 2 && ColorIsEqual(level1.goals[i].color, GREEN) && !CheckLineEnvColision((Line){player->greenLine.points[player->greenLine.last], playerCenter}, envItems, envItemsLength, &colisions)) ||
-          (player->selectedColor == 3 && ColorIsEqual(level1.goals[i].color, BLUE) && !CheckLineEnvColision((Line){player->blueLine.points[player->blueLine.last], playerCenter}, envItems, envItemsLength, &colisions)))
+      if ((player->selectedColor == 1 && ColorIsEqual(currentLevel.goals[i].color, RED) && !CheckLineEnvColision((Line){player->redLine.points[player->redLine.last], playerCenter}, envItems, envItemsLength, &colisions)) ||
+          (player->selectedColor == 2 && ColorIsEqual(currentLevel.goals[i].color, GREEN) && !CheckLineEnvColision((Line){player->greenLine.points[player->greenLine.last], playerCenter}, envItems, envItemsLength, &colisions)) ||
+          (player->selectedColor == 3 && ColorIsEqual(currentLevel.goals[i].color, BLUE) && !CheckLineEnvColision((Line){player->blueLine.points[player->blueLine.last], playerCenter}, envItems, envItemsLength, &colisions)))
       {
-        if (CheckCollisionRecs(player->rect, level1.goals[i].rect))
+        if (CheckCollisionRecs(player->rect, currentLevel.goals[i].rect))
         {
-          level1.goals[i].isSet = true;
-          NewLinePoint((Vector2){level1.goals[i].rect.x + level1.goals[i].rect.width / 2, level1.goals[i].rect.y + level1.goals[i].rect.height / 2}, player, envItems, envItemsLength);
+          currentLevel.goals[i].isSet = true;
+          NewLinePoint((Vector2){currentLevel.goals[i].rect.x + currentLevel.goals[i].rect.width / 2, currentLevel.goals[i].rect.y + currentLevel.goals[i].rect.height / 2}, player, envItems, envItemsLength);
           setGoal = true;
           player->selectedColor = 0;
         }
@@ -728,4 +750,15 @@ void UpdateCameraCenterInsideMap(Camera2D *camera, Player *player,
     camera->offset.x = (float)width / 2.0f - min.x;
   if (min.y > 0)
     camera->offset.y = (float)height / 2.0f - min.y;
+}
+
+
+bool ColorIsEqual(Color col1, Color col2)
+{
+  bool result = false;
+
+  if ((col1.r == col2.r) && (col1.g == col2.g) && (col1.b == col2.b) && (col1.a == col2.a))
+    result = true;
+
+  return result;
 }
