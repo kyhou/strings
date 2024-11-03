@@ -1,6 +1,11 @@
 {
     "files.associations": {
-        "raylib.h": "c"
+        "raylib.h": "c",
+        "shapes_helpers.h": "c",
+        "math.h": "c",
+        "level.h": "c",
+        "raymath.h": "c"
     },
-    "makefile.makefilePath": "./src/"
+    "makefile.makefilePath": "./src/",
+    "sonarlint.pathToCompileCommands": "${workspaceFolder}/build/compile_commands.json"
 }

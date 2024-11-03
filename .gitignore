@@ -70,3 +70,7 @@ compile_commands.json
 # Android
 *apk*
 android.*
+
+src/*.data
+src/*.js
+src/*.wasm
