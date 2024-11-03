@@ -25,7 +25,10 @@
 #include <stdio.h>  // Required for: printf()
 #include <stdlib.h> // Required for:
 #include <string.h> // Required for:
-#include <stdbool.h>
+
+#include "draw_helpers.h"
+#include "shapes_helpers.h"
+#include "level.h"
 
 //----------------------------------------------------------------------------------
 // Defines and Macros
@@ -53,13 +56,6 @@ typedef enum GameScreen
   GAMEPLAY,
   ENDING
 } GameScreen;
-
-typedef struct EnvItem
-{
-  Rectangle rect;
-  int blocking;
-  Color color;
-} EnvItem;
 
 typedef struct Points
 {
@@ -106,20 +102,6 @@ typedef struct Level
   EnvItem *envItems;
 } Level;
 
-typedef struct Line
-{
-  Vector2 start;
-  Vector2 end;
-} Line;
-
-typedef struct LineRecColisions
-{
-  Vector2 leftColisionPoint;
-  Vector2 rightColisionPoint;
-  Vector2 topColisionPoint;
-  Vector2 bottomColisionPoint;
-} LineRecColisions;
-
 //----------------------------------------------------------------------------------
 // Global Variables Definition
 //----------------------------------------------------------------------------------
@@ -158,11 +140,6 @@ void UpdateCameraCenterInsideMap(Camera2D *camera, Player *player,
 bool ColorIsEqual(Color col1, Color col2);
 void NewLinePoint(Vector2 playerCenter, Player *player, EnvItem *envItems, int envItemsLength);
 static void Reset();
-bool CheckLineRecColision(Line line, Rectangle rec, LineRecColisions *collisionPoints);
-bool CheckLineEnvColision(Line line, EnvItem *envItems, int qtdEnvItems, LineRecColisions *collisionPoints);
-Vector2 GetLineEnvItemClosestColisionVector2(Line line, EnvItem *envItems, int qtdEnvItems);
-bool lineLine(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4, Vector2 *intersectionPoint);
-void DrawClampedLine(float x1, float y1, float x2, float y2, float length, Color color);
 
 //------------------------------------------------------------------------------------
 // Program main entry point
@@ -511,10 +488,10 @@ static void UpdateDrawFrame(void)
       allGoalsReached &= level1.goals[i].isSet;
     }
 
-    if (allGoalsReached)
-    {
+    if (allGoalsReached) {
       currentScreen = ENDING;
     }
+    
   }
   break;
   case ENDING:
@@ -762,126 +739,4 @@ bool ColorIsEqual(Color col1, Color col2)
     result = true;
 
   return result;
-}
-
-bool CheckLineRecColision(Line line, Rectangle rec, LineRecColisions *collisionPoints)
-{
-  bool colision = false;
-
-  float recX1 = rec.x;
-  float recX2 = rec.x + rec.width;
-  float recY1 = rec.y;
-  float recY2 = rec.y + rec.height;
-
-  colision = colision || CheckCollisionLines(line.start, line.end, (Vector2){recX1, recY1}, (Vector2){recX1, recY2}, &collisionPoints->leftColisionPoint);
-  colision = colision || CheckCollisionLines(line.start, line.end, (Vector2){recX2, recY1}, (Vector2){recX2, recY2}, &collisionPoints->rightColisionPoint);
-  colision = colision || CheckCollisionLines(line.start, line.end, (Vector2){recX1, recY1}, (Vector2){recX2, recY1}, &collisionPoints->topColisionPoint);
-  colision = colision || CheckCollisionLines(line.start, line.end, (Vector2){recX1, recY2}, (Vector2){recX2, recY2}, &collisionPoints->bottomColisionPoint);
-
-  printf("colision = %d\n", colision);
-
-  return colision;
-}
-
-bool CheckLineEnvColision(Line line, EnvItem *envItems, int qtdEnvItems, LineRecColisions *collisionPoints)
-{
-  bool colision = false;
-
-  for (int i = 0; i < qtdEnvItems; i++)
-  {
-    if (envItems[i].blocking)
-    {
-      colision = colision || CheckLineRecColision(line, envItems[i].rect, collisionPoints);
-    }
-  }
-
-  return colision;
-}
-
-Vector2 GetLineEnvItemClosestColisionVector2(Line line, EnvItem *envItems, int qtdEnvItems)
-{
-  Vector2 lineEndPoint = line.end;
-
-  for (int i = 0; i < qtdEnvItems; i++)
-  {
-    if (envItems[i].blocking)
-    {
-      Rectangle rec = envItems[i].rect;
-      LineRecColisions colisions;
-
-      if (CheckLineRecColision(line, rec, &colisions))
-      {
-        printf("leftColisionPoint = (%f, %f)\n", colisions.leftColisionPoint.x, colisions.leftColisionPoint.y);
-        printf("rightColisionPoint = (%f, %f)\n", colisions.rightColisionPoint.x, colisions.rightColisionPoint.y);
-        printf("topColisionPoint = (%f, %f)\n", colisions.topColisionPoint.x, colisions.topColisionPoint.y);
-        printf("bottomColisionPoint = (%f, %f)\n", colisions.bottomColisionPoint.x, colisions.bottomColisionPoint.y);
-
-        float leftDistance = Vector2Distance(line.start, colisions.leftColisionPoint);
-        float rightDistance = Vector2Distance(line.start, colisions.rightColisionPoint);
-        float topDistance = Vector2Distance(line.start, colisions.topColisionPoint);
-        float bottomDistance = Vector2Distance(line.start, colisions.bottomColisionPoint);
-
-        float minDistance1 = fminf(leftDistance, rightDistance);
-        float minDistance2 = fminf(topDistance, bottomDistance);
-        float minDistance = fminf(minDistance1, minDistance2);
-
-        if (minDistance < Vector2Distance(line.start, lineEndPoint))
-        {
-          if (FloatEquals(minDistance, leftDistance))
-          {
-            printf("left\n");
-            lineEndPoint = colisions.leftColisionPoint;
-          }
-          else if (FloatEquals(minDistance, rightDistance))
-          {
-            printf("right\n");
-            lineEndPoint = colisions.rightColisionPoint;
-          }
-          else if (FloatEquals(minDistance, topDistance))
-          {
-            printf("top\n");
-            lineEndPoint = colisions.topColisionPoint;
-          }
-          else if (FloatEquals(minDistance, bottomDistance))
-          {
-            printf("bottom\n");
-            lineEndPoint = colisions.bottomColisionPoint;
-          }
-        }
-      }
-    }
-  }
-
-  return lineEndPoint;
-}
-
-void DrawClampedLine(float x1, float y1, float x2, float y2, float length, Color color)
-{
-  // Calculate the difference in x and y between the points
-  float dx = x2 - x1;
-  float dy = y2 - y1;
-
-  // Calculate the distance between the points
-  float distance = sqrtf(dx * dx + dy * dy);
-
-  // Avoid division by zero in case the points are the same
-  if (distance == 0)
-  {
-    return;
-  }
-
-  if (distance > length)
-  {
-    // Normalize the direction vector and scale it by the desired length
-    float scale = length / distance;
-    float clampedX = x1 + dx * scale;
-    float clampedY = y1 + dy * scale;
-
-    // Call the function to draw the line with clamped endpoint
-    DrawLineEx((Vector2){x1, y1}, (Vector2){clampedX, clampedY}, 2.0f, color);
-  }
-  else
-  {
-    DrawLineEx((Vector2){x1, y1}, (Vector2){x2, y2}, 2.0f, color);
-  }
 }
